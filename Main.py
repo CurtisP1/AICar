@@ -162,18 +162,13 @@ class mywindow(QMainWindow, Ui_Client):
 
         self.Btn_Move_Left.released.connect(self.on_btn_Stop)
 
-
         self.Btn_Move_Right.released.connect(self.on_btn_Stop)
-
 
         self.Btn_DiaLeft.released.connect(self.on_btn_Stop)
 
-
         self.Btn_DiaRight.released.connect(self.on_btn_Stop)
 
-
         self.Btn_DiaDLeft.released.connect(self.on_btn_Stop)
-
 
         self.Btn_DiaDRight.released.connect(self.on_btn_Stop)
 
