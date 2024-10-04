@@ -206,6 +206,10 @@ class mywindow(QMainWindow, Ui_Client):
         self.L = SigStr()
         self.L.sigStr.connect(self.onLightChanged)
 
+        self.tracing = False  # To track tracing state
+        self.capture_timer = QTimer(self)  # Timer for capturing images
+        self.capture_timer.timeout.connect(self.capture_image)  # Capture image every timeout
+
     def onPbChanged(self, value):
         self.progress_Power.setValue(value)
 
@@ -745,24 +749,26 @@ class mywindow(QMainWindow, Ui_Client):
             pass
         return bValid
 
+
     def Tracking_Face(self):
         if self.Btn_Tracking_Faces.text() == "Tracing-On":
             self.Btn_Tracking_Faces.setText("Tracing-Off")
+            self.tracing = True
+            self.capture_timer.start(500)  # Start capturing images every 0.5 seconds
         else:
             self.Btn_Tracking_Faces.setText("Tracing-On")
-    def find_Face(self,face_x,face_y):
-        if face_x!=0 and face_y!=0:
-            offset_x=float(face_x/400-0.5)*2
-            offset_y=float(face_y/300-0.5)*2
-            delta_degree_x = int(4* offset_x)
-            delta_degree_y = int(-4 * offset_y)
-            self.servo1=self.servo1+delta_degree_x
-            self.servo2=self.servo2+delta_degree_y
-            if offset_x > -0.15 and offset_y >-0.15 and offset_x < 0.15 and offset_y <0.15:
-                pass
-            else:
-                self.HSlider_Servo1.setValue(self.servo1)
-                self.VSlider_Servo2.setValue(self.servo2)
+            self.tracing = False
+            self.capture_timer.stop()  # Stop image capturing
+
+    def capture_image(self):
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
+        image_path = f"/path/to/save/location/frame_{timestamp}.jpg"
+
+        # Assuming self.TCP.video_Flag ensures the frame is valid
+        if self.is_valid_jpg('video.jpg'):  # Modify as per your source
+            img = cv2.imread('video.jpg')  # Read the current frame from the file
+            cv2.imwrite(image_path, img)  # Save the image with a unique name
+            print(f"Saved image: {image_path}")
 
     def time(self):
         self.TCP.video_Flag = False
