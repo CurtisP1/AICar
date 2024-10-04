@@ -749,15 +749,15 @@ class mywindow(QMainWindow, Ui_Client):
         if self.Btn_Tracking_Faces.text() == "Tracing-On":
             self.Btn_Tracking_Faces.setText("Tracing-Off")
             self.tracing = True
-            self.capture_timer.start(500)  # Start capturing images every 0.5 seconds
+            self.capture_timer.start(100)  # Start capturing images every 0.1 seconds
         else:
             self.Btn_Tracking_Faces.setText("Tracing-On")
             self.tracing = False
             self.capture_timer.stop()  # Stop image capturing
 
     def capture_image(self):
-        timestamp = time.strftime("%Y%m%d-%H%M%S")
-        image_path = f"/path/to/save/location/frame_{timestamp}.jpg"
+        timestamp = time.strftime("%Y%m%d-%H%M%S") + '-' + str(int(time.time() * 1000) % 1000)  # millisecond
+        image_path = f"C:/Users/Xcelr/Documents/Freenove_4WD_Smart_Car_Kit_for_Raspberry_Pi-master/Freenove_4WD_Smart_Car_Kit_for_Raspberry_Pi-master/Code/Client/training images/frame_{timestamp}.jpg"
 
         # Assuming self.TCP.video_Flag ensures the frame is valid
         if self.is_valid_jpg('video.jpg'):  # Modify as per your source
@@ -766,14 +766,14 @@ class mywindow(QMainWindow, Ui_Client):
             print(f"Saved image: {image_path}")
 
     def time(self):
+        """Update the video display, without face tracking."""
         self.TCP.video_Flag = False
         try:
             if self.is_valid_jpg('video.jpg'):
+                # Update the video display with the current frame
                 self.label_Video.setPixmap(QPixmap('video.jpg'))
-                if self.Btn_Tracking_Faces.text() == "Tracing-Off":
-                    self.find_Face(self.TCP.face_x, self.TCP.face_y)
         except Exception as e:
-            print(e)
+            print(f"Error updating video: {e}")
         self.TCP.video_Flag = True
 
 
