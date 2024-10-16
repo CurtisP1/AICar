@@ -6,7 +6,6 @@ import socket
 import os
 import io
 import time
-import imghdr
 import sys
 from threading import Timer
 from threading import Thread
@@ -162,18 +161,13 @@ class mywindow(QMainWindow, Ui_Client):
 
         self.Btn_Move_Left.released.connect(self.on_btn_Stop)
 
-
         self.Btn_Move_Right.released.connect(self.on_btn_Stop)
-
 
         self.Btn_DiaLeft.released.connect(self.on_btn_Stop)
 
-
         self.Btn_DiaRight.released.connect(self.on_btn_Stop)
 
-
         self.Btn_DiaDLeft.released.connect(self.on_btn_Stop)
-
 
         self.Btn_DiaDRight.released.connect(self.on_btn_Stop)
 
@@ -205,6 +199,21 @@ class mywindow(QMainWindow, Ui_Client):
 
         self.L = SigStr()
         self.L.sigStr.connect(self.onLightChanged)
+
+        self.is_stopped = True
+        self.active_keys = set()
+
+        self.tracing = False  # To track tracing state
+        self.capture_timer = QTimer(self)  # Timer for capturing images
+        self.capture_timer.timeout.connect(self.capture_image)  # Capture image every timeout
+
+        self.log_directory = os.path.join(f"C:/Users/Xcelr/Documents/Freenove_4WD_Smart_Car_Kit_for_Raspberry_Pi-master/Freenove_4WD_Smart_Car_Kit_for_Raspberry_Pi-master/Code/Client/pwm_commands")
+        # Ensure the directory exists, create it if it doesn't
+        os.makedirs(self.log_directory, exist_ok=True)
+
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
+        self.log_filename = os.path.join(self.log_directory, f"pwm_log_{timestamp}.txt")
+        print(f"Logging PWM commands to: {self.log_filename}")
 
     def onPbChanged(self, value):
         self.progress_Power.setValue(value)
@@ -320,73 +329,48 @@ class mywindow(QMainWindow, Ui_Client):
                 self.checkBox_Led8.setChecked(True)
 
         if event.isAutoRepeat():
-            pass
-        else:
-            if event.key() == Qt.Key_W:
-                self.on_btn_ForWard()
-                self.Key_W = True
-            elif event.key() == Qt.Key_S:
-                self.on_btn_BackWard()
-                self.Key_S = True
-            elif event.key() == Qt.Key_A:
-                self.on_btn_Turn_Left()
-                self.Key_A = True
-            elif event.key() == Qt.Key_D:
-                self.on_btn_Turn_Right()
-                self.Key_D = True
+            return
 
-            elif event.key() == Qt.Key_Q:
-                self.on_btn_Dialeft()
-                self.Key_Q = True
-            elif event.key() == Qt.Key_E:
-                self.on_btn_Diaright()
-                self.Key_E = True
-            elif event.key() == Qt.Key_Z:
-                self.on_btn_Diad_left()
-                self.Key_Z = True
-            elif event.key() == Qt.Key_X:
-                self.on_btn_Diad_right()
-                self.Key_X = True
-            elif event.key() == Qt.Key_Space:
-                self.on_btn_Buzzer()
-                self.Key_Space = True
+        if event.key() == Qt.Key_W:
+            self.active_keys.add('W')
+            self.on_btn_ForWard()
+            self.is_stopped = False
+        elif event.key() == Qt.Key_S:
+            self.active_keys.add('S')
+            self.on_btn_BackWard()
+            self.is_stopped = False
+        elif event.key() == Qt.Key_A:
+            self.active_keys.add('A')
+            self.on_btn_Turn_Left()
+            self.is_stopped = False
+        elif event.key() == Qt.Key_D:
+            self.active_keys.add('D')
+            self.on_btn_Turn_Right()
+            self.is_stopped = False
+        elif event.key() == Qt.Key_Space:
+            self.on_btn_Buzzer()
+            self.Key_Space = True
 
     def keyReleaseEvent(self, event):
+        if event.isAutoRepeat():
+            return
+        # Remove the released key from the active set
+        if event.key() == Qt.Key_W:
+            self.active_keys.discard('W')
+        elif event.key() == Qt.Key_A:
+            self.active_keys.discard('A')
+        elif event.key() == Qt.Key_S:
+            self.active_keys.discard('S')
+        elif event.key() == Qt.Key_D:
+            self.active_keys.discard('D')
 
-        if (event.key() == Qt.Key_W):
-            time.sleep(0.05)
-            if (event.key() == Qt.Key_W):
-                if not (event.isAutoRepeat()) and self.Key_W is True:
-                    self.on_btn_Stop()
-                    self.Key_W = False
-        elif (event.key() == Qt.Key_A):
-            if not (event.isAutoRepeat()) and self.Key_A is True:
+        # Only stop if no movement keys are active
+        if not self.active_keys:
+            if not self.is_stopped:
                 self.on_btn_Stop()
-                self.Key_A = False
-        elif (event.key() == Qt.Key_S):
-            if not (event.isAutoRepeat()) and self.Key_S is True:
-                self.on_btn_Stop()
-                self.Key_S = False
-        elif (event.key() == Qt.Key_D):
-            if not (event.isAutoRepeat()) and self.Key_D is True:
-                self.on_btn_Stop()
-                self.Key_D = False
-        elif (event.key() == Qt.Key_Q):
-            if not (event.isAutoRepeat()) and self.Key_Q is True:
-                self.on_btn_Stop()
-                self.Key_Q = False
-        elif (event.key() == Qt.Key_E):
-            if not (event.isAutoRepeat()) and self.Key_E is True:
-                self.on_btn_Stop()
-                self.Key_E = False
-        elif (event.key() == Qt.Key_Z):
-            if not (event.isAutoRepeat()) and self.Key_Z is True:
-                self.on_btn_Stop()
-                self.Key_Z = False
-        elif (event.key() == Qt.Key_X):
-            if not (event.isAutoRepeat()) and self.Key_X is True:
-                self.on_btn_Stop()
-                self.Key_X = False
+                self.is_stopped = True
+        else:
+            self.is_stopped = False
 
         if (event.key() == Qt.Key_Space):
             if not (event.isAutoRepeat()) and self.Key_Space is True:
@@ -397,26 +381,33 @@ class mywindow(QMainWindow, Ui_Client):
         ForWard = self.intervalChar + str(1250) + self.intervalChar + str(1250) + self.intervalChar + str(
             1250) + self.intervalChar + str(1250) + self.endChar
         self.TCP.sendData(cmd.CMD_MOTOR + ForWard)
+        self.log_pwm_command(f"Forward: {ForWard}")
 
     def on_btn_Turn_Left(self):
         Turn_Left = self.intervalChar + str(300) + self.intervalChar + str(300) + self.intervalChar + str(
             3500) + self.intervalChar + str(3500) + self.endChar
         self.TCP.sendData(cmd.CMD_MOTOR + Turn_Left)
+        self.log_pwm_command(f"Turn Left: {Turn_Left}")
 
     def on_btn_BackWard(self):
         BackWard = self.intervalChar + str(-1250) + self.intervalChar + str(-1250) + self.intervalChar + str(
             -1250) + self.intervalChar + str(-1250) + self.endChar
         self.TCP.sendData(cmd.CMD_MOTOR + BackWard)
+        self.log_pwm_command(f"Backward: {BackWard}")
 
     def on_btn_Turn_Right(self):
         Turn_Right = self.intervalChar + str(3500) + self.intervalChar + str(3500) + self.intervalChar + str(
             300) + self.intervalChar + str(300) + self.endChar
         self.TCP.sendData(cmd.CMD_MOTOR + Turn_Right)
+        self.log_pwm_command(f"Turn Right: {Turn_Right}")
 
     def on_btn_Stop(self):
-        Stop = self.intervalChar + str(0) + self.intervalChar + str(0) + self.intervalChar + str(
-            0) + self.intervalChar + str(0) + self.endChar
+        if not self.active_keys:
+            Stop = self.intervalChar + str(0) + self.intervalChar + str(0) + self.intervalChar + str(
+                0) + self.intervalChar + str(0) + self.endChar
         self.TCP.sendData(cmd.CMD_MOTOR + Stop)
+        self.log_pwm_command(f"Stop: {Stop}")
+        self.is_stopped = True
 
 
 
@@ -745,36 +736,62 @@ class mywindow(QMainWindow, Ui_Client):
             pass
         return bValid
 
+
     def Tracking_Face(self):
         if self.Btn_Tracking_Faces.text() == "Tracing-On":
             self.Btn_Tracking_Faces.setText("Tracing-Off")
+            self.tracing = True
+            self.capture_timer.start(100)  # Start capturing images every 0.1 seconds
         else:
             self.Btn_Tracking_Faces.setText("Tracing-On")
-    def find_Face(self,face_x,face_y):
-        if face_x!=0 and face_y!=0:
-            offset_x=float(face_x/400-0.5)*2
-            offset_y=float(face_y/300-0.5)*2
-            delta_degree_x = int(4* offset_x)
-            delta_degree_y = int(-4 * offset_y)
-            self.servo1=self.servo1+delta_degree_x
-            self.servo2=self.servo2+delta_degree_y
-            if offset_x > -0.15 and offset_y >-0.15 and offset_x < 0.15 and offset_y <0.15:
-                pass
-            else:
-                self.HSlider_Servo1.setValue(self.servo1)
-                self.VSlider_Servo2.setValue(self.servo2)
+            self.tracing = False
+            self.capture_timer.stop()  # Stop image capturing
+
+    def capture_image(self):
+        timestamp = time.strftime("%Y%m%d-%H%M%S") + '-' + str(int(time.time() * 1000) % 1000)  # millisecond
+        image_path = f"C:/Users/Xcelr/Documents/Freenove_4WD_Smart_Car_Kit_for_Raspberry_Pi-master/Freenove_4WD_Smart_Car_Kit_for_Raspberry_Pi-master/Code/Client/training images/frame_{timestamp}.jpg"
+
+        # Read the current frame
+        img = cv2.imread('video.jpg')
+
+        # Check if the image was read correctly
+        if img is None:
+            print("Error: Image data is invalid, could not read 'video.jpg'.")
+            return
+
+        try:
+            cv2.imwrite(image_path, img)
+            print(f"Image saved at {image_path}")
+        except cv2.error as e:
+            print(f"OpenCV error while saving image: {e}")
+        except Exception as e:
+            print(f"General error while saving image: {e}")
 
     def time(self):
+        """Update the video display, without face tracking."""
         self.TCP.video_Flag = False
         try:
             if self.is_valid_jpg('video.jpg'):
+                # Update the video display with the current frame
                 self.label_Video.setPixmap(QPixmap('video.jpg'))
-                if self.Btn_Tracking_Faces.text() == "Tracing-Off":
-                    self.find_Face(self.TCP.face_x, self.TCP.face_y)
         except Exception as e:
-            print(e)
+            print(f"Error updating video: {e}")
         self.TCP.video_Flag = True
 
+    def log_pwm_command(self, command):
+        """
+        Logs the given PWM command to a text file.
+
+        Args:
+            command (str): The command string that is being sent to the motor.
+        """
+        try:
+            with open(self.log_filename, "a") as log_file:  # Open in append mode
+                timestamp = time.strftime("%Y-%m-%d %H:%M:%S."+ str(int(time.time() * 1000) % 1000) )
+                log_file.write(f"{timestamp} - {command}\n")
+                print(f"Logged PWM command: {command}")
+        except Exception as e:
+            print(f"Error logging PWM command: {e}")
 
 if __name__ == '__main__':
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
