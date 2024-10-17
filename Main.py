@@ -18,6 +18,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
+# import tensorflow as tf
 
 
 class ProgBar(QObject):
@@ -207,13 +208,23 @@ class mywindow(QMainWindow, Ui_Client):
         self.capture_timer = QTimer(self)  # Timer for capturing images
         self.capture_timer.timeout.connect(self.capture_image)  # Capture image every timeout
 
-        self.log_directory = os.path.join(f"C:/Users/Xcelr/Documents/Freenove_4WD_Smart_Car_Kit_for_Raspberry_Pi-master/Freenove_4WD_Smart_Car_Kit_for_Raspberry_Pi-master/Code/Client/pwm_commands")
+        self.log_directory = os.path.join(f"./pwm_commands")
         # Ensure the directory exists, create it if it doesn't
         os.makedirs(self.log_directory, exist_ok=True)
 
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         self.log_filename = os.path.join(self.log_directory, f"pwm_log_{timestamp}.txt")
         print(f"Logging PWM commands to: {self.log_filename}")
+
+        self.current_command = "stop"  # Initialize with a default value
+        # Load the trained model
+        # self.model = tf.keras.models.load_model('line_follower_model.h5')
+        # print("Model loaded successfully.")
+        #
+        # # Set up timers for prediction and capturing
+        # self.prediction_timer = QTimer(self)
+        # self.prediction_timer.timeout.connect(self.predict_and_move)
+        # self.prediction_timer.start(100)  # Predict every 100ms
 
     def onPbChanged(self, value):
         self.progress_Power.setValue(value)
@@ -381,32 +392,32 @@ class mywindow(QMainWindow, Ui_Client):
         ForWard = self.intervalChar + str(1250) + self.intervalChar + str(1250) + self.intervalChar + str(
             1250) + self.intervalChar + str(1250) + self.endChar
         self.TCP.sendData(cmd.CMD_MOTOR + ForWard)
-        self.log_pwm_command(f"Forward: {ForWard}")
+        self.current_command = (f"Forward: {ForWard}")
 
     def on_btn_Turn_Left(self):
         Turn_Left = self.intervalChar + str(300) + self.intervalChar + str(300) + self.intervalChar + str(
             3500) + self.intervalChar + str(3500) + self.endChar
         self.TCP.sendData(cmd.CMD_MOTOR + Turn_Left)
-        self.log_pwm_command(f"Turn Left: {Turn_Left}")
+        self.current_command = f"Turn Left: {Turn_Left}"
 
     def on_btn_BackWard(self):
         BackWard = self.intervalChar + str(-1250) + self.intervalChar + str(-1250) + self.intervalChar + str(
             -1250) + self.intervalChar + str(-1250) + self.endChar
         self.TCP.sendData(cmd.CMD_MOTOR + BackWard)
-        self.log_pwm_command(f"Backward: {BackWard}")
+        self.current_command = f"Backward: {BackWard}"
 
     def on_btn_Turn_Right(self):
         Turn_Right = self.intervalChar + str(3500) + self.intervalChar + str(3500) + self.intervalChar + str(
             300) + self.intervalChar + str(300) + self.endChar
         self.TCP.sendData(cmd.CMD_MOTOR + Turn_Right)
-        self.log_pwm_command(f"Turn Right: {Turn_Right}")
+        self.current_command = f"Turn Right: {Turn_Right}"
 
     def on_btn_Stop(self):
         if not self.active_keys:
             Stop = self.intervalChar + str(0) + self.intervalChar + str(0) + self.intervalChar + str(
                 0) + self.intervalChar + str(0) + self.endChar
         self.TCP.sendData(cmd.CMD_MOTOR + Stop)
-        self.log_pwm_command(f"Stop: {Stop}")
+        self.current_command = f"Stop: {Stop}"
         self.is_stopped = True
 
 
@@ -749,7 +760,7 @@ class mywindow(QMainWindow, Ui_Client):
 
     def capture_image(self):
         timestamp = time.strftime("%Y%m%d-%H%M%S") + '-' + str(int(time.time() * 1000) % 1000)  # millisecond
-        image_path = f"C:/Users/Xcelr/Documents/Freenove_4WD_Smart_Car_Kit_for_Raspberry_Pi-master/Freenove_4WD_Smart_Car_Kit_for_Raspberry_Pi-master/Code/Client/training images/frame_{timestamp}.jpg"
+        image_path = f"./training images/frame_{timestamp}.jpg"
 
         # Read the current frame
         img = cv2.imread('video.jpg')
@@ -760,12 +771,13 @@ class mywindow(QMainWindow, Ui_Client):
             return
 
         try:
-            cv2.imwrite(image_path, img)
-            print(f"Image saved at {image_path}")
-        except cv2.error as e:
-            print(f"OpenCV error while saving image: {e}")
+            if self.is_valid_jpg('video.jpg'):
+                img = cv2.imread('video.jpg')  # Read the current frame from the file
+                cv2.imwrite(image_path, img)  # Save the image with a unique name
+                self.log_movement_with_image(image_path, self.current_command)
+                print(f"Saved image: {image_path}")
         except Exception as e:
-            print(f"General error while saving image: {e}")
+            print(f"Error capturing image: {e}")
 
     def time(self):
         """Update the video display, without face tracking."""
@@ -778,20 +790,32 @@ class mywindow(QMainWindow, Ui_Client):
             print(f"Error updating video: {e}")
         self.TCP.video_Flag = True
 
-    def log_pwm_command(self, command):
-        """
-        Logs the given PWM command to a text file.
+    # def log_pwm_command(self, command):
+    #     """
+    #     Logs the given PWM command to a text file.
+    #
+    #     Args:
+    #         command (str): The command string that is being sent to the motor.
+    #     """
+    #     try:
+    #         with open(self.log_filename, "a") as log_file:  # Open in append mode
+    #             timestamp = time.strftime("%Y-%m-%d %H:%M:%S."+ str(int(time.time() * 1000) % 1000) )
+    #             log_file.write(f"{timestamp} - {command}\n")
+    #             print(f"Logged PWM command: {command}")
+    #     except Exception as e:
+    #         print(f"Error logging PWM command: {e}")
 
-        Args:
-            command (str): The command string that is being sent to the motor.
+    def log_movement_with_image(self, image_path, command):
+        """
+        Logs the image path along with the movement command.
         """
         try:
-            with open(self.log_filename, "a") as log_file:  # Open in append mode
-                timestamp = time.strftime("%Y-%m-%d %H:%M:%S."+ str(int(time.time() * 1000) % 1000) )
-                log_file.write(f"{timestamp} - {command}\n")
-                print(f"Logged PWM command: {command}")
+            with open(self.log_filename, "a") as log_file:
+                timestamp = time.strftime("%Y-%m-%d %H:%M:%S." + str(int(time.time() * 1000) % 1000) )
+                log_file.write(f"{timestamp}, {image_path}, {command}\n")
+                print(f"Logged image and command: {image_path}, {command}")
         except Exception as e:
-            print(f"Error logging PWM command: {e}")
+            print(f"Error logging image and command: {e}")
 
 if __name__ == '__main__':
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
