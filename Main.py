@@ -1,825 +1,412 @@
-#!/usr/bin/python 
-# -*- coding: utf-8 -*-
-import numpy as np
-import cv2
-import socket
 import os
-import io
+import cv2
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn as nn
+from torchvision.models import squeezenet1_1
+import torch.quantization
+from torch.utils.data import Dataset, DataLoader, Subset, WeightedRandomSampler
+from torchvision.models import mobilenet_v3_small
+from torchvision.models import squeezenet1_1
+from torchvision import transforms
+import matplotlib.pyplot as plt
+from sklearn.utils.class_weight import compute_class_weight
+from sklearn.metrics import classification_report, confusion_matrix
+from collections import Counter
+import seaborn as sns
 import time
-import sys
-from threading import Timer
-from threading import Thread
-from PIL import Image
-from Command import COMMAND as cmd
-from Thread import *
-from Client_Ui import Ui_Client
-from Video import *
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-# import tensorflow as tf
-
-
-class ProgBar(QObject):
-    sigPB = pyqtSignal(int)
-
-    def send(self, text):
-        self.sigPB.emit(text)
-
-
-class SigStr(QObject):
-    sigStr = pyqtSignal(str)
-
-    def send(self, text):
-        self.sigStr.emit(text)
-
-
-class mywindow(QMainWindow, Ui_Client):
-    def __init__(self):
-        global timer
-        super(mywindow, self).__init__()
-        self.setupUi(self)
-        self.endChar = '\n'
-        self.intervalChar = '#'
-        file = open('IP.txt', 'r')
-        self.IP.setText(str(file.readline()))
-        file.close()
-        self.h = self.IP.text()
-        self.TCP = VideoStreaming()
-        self.servo1 = 90
-        self.servo2 = 90
-        self.label_FineServo2.setText("0")
-        self.label_FineServo1.setText("0")
-        self.img = QImage()
-        self.img.load("*.png")
-        self.img.save("*.png")
-        self.img.load("*.jpg")
-        self.img.save("*.jpg")
-        self.setWindowIcon(QIcon('image/logo_Mini.png'))
-        self.label_Video.setPixmap(QPixmap('image/Raspberry_4WD_M_Car.png'))
-        self.W_flag = 0
-        self.m_DragPosition = self.pos()
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
-        self.setMouseTracking(True)
-        self.Key_W = False
-        self.Key_A = False
-        self.Key_S = False
-        self.Key_D = False
-        self.Key_Q = False
-        self.Key_E = False
-        self.Key_Z = False
-        self.Key_X = False
-        self.Key_Space = False
-        self.Wheel_Flag = 1
-        self.setFocusPolicy(Qt.StrongFocus)
-        self.progress_Power.setMinimum(0)
-        self.progress_Power.setMaximum(100)
-
-        self.name.setAlignment(QtCore.Qt.AlignCenter)
-        self.label_Servo1.setText('90')
-        self.label_Servo2.setText('90')
-        self.label_Video.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignVCenter)
-        self.label_Servo1.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignVCenter)
-        self.label_Servo2.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignVCenter)
-
-        self.label_FineServo1.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignVCenter)
-        self.label_FineServo2.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignVCenter)
-
-        self.HSlider_Servo1.setMinimum(0)
-        self.HSlider_Servo1.setMaximum(180)
-        self.HSlider_Servo1.setSingleStep(1)
-        self.HSlider_Servo1.setValue(self.servo1)
-        self.HSlider_Servo1.valueChanged.connect(self.Change_Left_Right)
-
-        self.HSlider_FineServo1.setMinimum(-10)
-        self.HSlider_FineServo1.setMaximum(10)
-        self.HSlider_FineServo1.setSingleStep(1)
-        self.HSlider_FineServo1.setValue(0)
-        self.HSlider_FineServo1.valueChanged.connect(self.Fine_Tune_Left_Right)
-
-        self.HSlider_FineServo2.setMinimum(-10)
-        self.HSlider_FineServo2.setMaximum(10)
-        self.HSlider_FineServo2.setSingleStep(1)
-        self.HSlider_FineServo2.setValue(0)
-        self.HSlider_FineServo2.valueChanged.connect(self.Fine_Tune_Up_Down)
-
-        self.VSlider_Servo2.setMinimum(80)
-        self.VSlider_Servo2.setMaximum(180)
-        self.VSlider_Servo2.setSingleStep(1)
-        self.VSlider_Servo2.setValue(self.servo2)
-        self.VSlider_Servo2.valueChanged.connect(self.Change_Up_Down)
-
-        self.checkBox_Led1.setChecked(False)
-        self.checkBox_Led1.stateChanged.connect(lambda: self.LedChange(self.checkBox_Led1))
-        self.checkBox_Led2.setChecked(False)
-        self.checkBox_Led2.stateChanged.connect(lambda: self.LedChange(self.checkBox_Led2))
-        self.checkBox_Led3.setChecked(False)
-        self.checkBox_Led3.stateChanged.connect(lambda: self.LedChange(self.checkBox_Led3))
-        self.checkBox_Led4.setChecked(False)
-        self.checkBox_Led4.stateChanged.connect(lambda: self.LedChange(self.checkBox_Led4))
-        self.checkBox_Led5.setChecked(False)
-        self.checkBox_Led5.stateChanged.connect(lambda: self.LedChange(self.checkBox_Led5))
-        self.checkBox_Led6.setChecked(False)
-        self.checkBox_Led6.stateChanged.connect(lambda: self.LedChange(self.checkBox_Led6))
-        self.checkBox_Led7.setChecked(False)
-        self.checkBox_Led7.stateChanged.connect(lambda: self.LedChange(self.checkBox_Led7))
-        self.checkBox_Led8.setChecked(False)
-        self.checkBox_Led8.stateChanged.connect(lambda: self.LedChange(self.checkBox_Led8))
-
-        self.checkBox_Led_Mode1.setChecked(False)
-        self.checkBox_Led_Mode1.stateChanged.connect(lambda: self.LedChange(self.checkBox_Led_Mode1))
-        self.checkBox_Led_Mode2.setChecked(False)
-        self.checkBox_Led_Mode2.stateChanged.connect(lambda: self.LedChange(self.checkBox_Led_Mode2))
-        self.checkBox_Led_Mode3.setChecked(False)
-        self.checkBox_Led_Mode3.stateChanged.connect(lambda: self.LedChange(self.checkBox_Led_Mode3))
-        self.checkBox_Led_Mode4.setChecked(False)
-        self.checkBox_Led_Mode4.stateChanged.connect(lambda: self.LedChange(self.checkBox_Led_Mode4))
-
-        self.Btn_Mode1.setChecked(True)
-        self.Btn_Mode1.toggled.connect(lambda: self.on_btn_Mode(self.Btn_Mode1))
-        self.Btn_Mode2.setChecked(False)
-        self.Btn_Mode2.toggled.connect(lambda: self.on_btn_Mode(self.Btn_Mode2))
-        self.Btn_Mode3.setChecked(False)
-        self.Btn_Mode3.toggled.connect(lambda: self.on_btn_Mode(self.Btn_Mode3))
-        self.Btn_Mode4.setChecked(False)
-        self.Btn_Mode4.toggled.connect(lambda: self.on_btn_Mode(self.Btn_Mode4))
-
-        self.Ultrasonic.clicked.connect(self.on_btn_Ultrasonic)
-        self.Light.clicked.connect(self.on_btn_Light)
-
-        self.Btn_ForWard.pressed.connect(self.on_btn_ForWard)
-        self.Btn_ForWard.released.connect(self.on_btn_Stop)
-
-        self.Btn_Turn_Left.pressed.connect(self.on_btn_Turn_Left)
-        self.Btn_Turn_Left.released.connect(self.on_btn_Stop)
-
-        self.Btn_BackWard.pressed.connect(self.on_btn_BackWard)
-        self.Btn_BackWard.released.connect(self.on_btn_Stop)
-
-        self.Btn_Turn_Right.pressed.connect(self.on_btn_Turn_Right)
-        self.Btn_Turn_Right.released.connect(self.on_btn_Stop)
-
-        self.Btn_Move_Left.released.connect(self.on_btn_Stop)
-
-        self.Btn_Move_Right.released.connect(self.on_btn_Stop)
-
-        self.Btn_DiaLeft.released.connect(self.on_btn_Stop)
-
-        self.Btn_DiaRight.released.connect(self.on_btn_Stop)
-
-        self.Btn_DiaDLeft.released.connect(self.on_btn_Stop)
-
-        self.Btn_DiaDRight.released.connect(self.on_btn_Stop)
-
-        self.Btn_Video.clicked.connect(self.on_btn_video)
-
-        self.Btn_Up.clicked.connect(self.on_btn_Up)
-        self.Btn_Left.clicked.connect(self.on_btn_Left)
-        self.Btn_Down.clicked.connect(self.on_btn_Down)
-        self.Btn_Home.clicked.connect(self.on_btn_Home)
-        self.Btn_Right.clicked.connect(self.on_btn_Right)
-        self.Btn_Tracking_Faces.clicked.connect(self.Tracking_Face)
-        self.Btn_wheel.clicked.connect(self.on_btn_wheelchange)
-
-        self.Btn_Buzzer.pressed.connect(self.on_btn_Buzzer)
-        self.Btn_Buzzer.released.connect(self.on_btn_Buzzer)
-
-        self.Btn_Connect.clicked.connect(self.on_btn_Connect)
-
-        self.Window_Min.clicked.connect(self.windowMinimumed)
-        self.Window_Close.clicked.connect(self.close)
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.time)
-
-        self.Pb = ProgBar()
-        self.Pb.sigPB.connect(self.onPbChanged)
-
-        self.U = SigStr()
-        self.U.sigStr.connect(self.onUsonicChanged)
-
-        self.L = SigStr()
-        self.L.sigStr.connect(self.onLightChanged)
-
-        self.is_stopped = True
-        self.active_keys = set()
-
-        self.tracing = False  # To track tracing state
-        self.capture_timer = QTimer(self)  # Timer for capturing images
-        self.capture_timer.timeout.connect(self.capture_image)  # Capture image every timeout
-
-        self.log_directory = os.path.join(f"./pwm_commands")
-        # Ensure the directory exists, create it if it doesn't
-        os.makedirs(self.log_directory, exist_ok=True)
-
-        timestamp = time.strftime("%Y%m%d-%H%M%S")
-        self.log_filename = os.path.join(self.log_directory, f"pwm_log_{timestamp}.txt")
-        print(f"Logging PWM commands to: {self.log_filename}")
-
-        self.current_command = "stop"  # Initialize with a default value
-        # Load the trained model
-        # self.model = tf.keras.models.load_model('line_follower_model.h5')
-        # print("Model loaded successfully.")
-        #
-        # # Set up timers for prediction and capturing
-        # self.prediction_timer = QTimer(self)
-        # self.prediction_timer.timeout.connect(self.predict_and_move)
-        # self.prediction_timer.start(100)  # Predict every 100ms
-
-    def onPbChanged(self, value):
-        self.progress_Power.setValue(value)
-
-    def onUsonicChanged(self, value):
-        self.Ultrasonic.setText(value)
-
-    def onLightChanged(self, value):
-        self.Light.setText(value)
-
-    def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            self.m_drag = True
-            self.m_DragPosition = event.globalPos() - self.pos()
-            event.accept()
-
-    def mouseMoveEvent(self, QMouseEvent):
-        if QMouseEvent.buttons() and Qt.LeftButton:
-            self.move(QMouseEvent.globalPos() - self.m_DragPosition)
-            QMouseEvent.accept()
-
-    def mouseReleaseEvent(self, QMouseEvent):
-        self.m_drag = False
-
-    def keyPressEvent(self, event):
-        if (event.key() == Qt.Key_Up):
-            self.on_btn_Up()
-        elif (event.key() == Qt.Key_Left):
-            self.on_btn_Left()
-        elif (event.key() == Qt.Key_Down):
-            self.on_btn_Down()
-        elif (event.key() == Qt.Key_Right):
-            self.on_btn_Right()
-        elif (event.key() == Qt.Key_Home):
-            self.on_btn_Home()
-
-        if (event.key() == Qt.Key_R):
-            if self.Btn_Mode1.isChecked() is True:
-                self.Btn_Mode2.setChecked(True)
-            elif self.Btn_Mode2.isChecked() is True:
-                self.Btn_Mode3.setChecked(True)
-            elif self.Btn_Mode3.isChecked() is True:
-                self.Btn_Mode4.setChecked(True)
-            elif self.Btn_Mode4.isChecked() is True:
-                self.Btn_Mode1.setChecked(True)
-
-        if (event.key() == Qt.Key_L):
-            count = 0
-            if self.checkBox_Led_Mode1.isChecked() is True:
-                self.checkBox_Led_Mode2.setChecked(True)
-            elif self.checkBox_Led_Mode2.isChecked() is True:
-                self.checkBox_Led_Mode3.setChecked(True)
-            elif self.checkBox_Led_Mode3.isChecked() is True:
-                self.checkBox_Led_Mode4.setChecked(True)
-            elif self.checkBox_Led_Mode4.isChecked() is True:
-                self.checkBox_Led_Mode1.setChecked(True)
-
-            for i in range(1, 5):
-                checkBox_Led_Mode = getattr(self, "checkBox_Led_Mode%d" % i)
-                if checkBox_Led_Mode.isChecked() is False:
-                    count += 1
-                else:
-                    break
-            if count == 4:
-                self.checkBox_Led_Mode1.setChecked(True)
-
-        if (event.key() == Qt.Key_C):
-            self.on_btn_Connect()
-        if (event.key() == Qt.Key_V):
-            self.on_btn_video()
-        if (event.key() == Qt.Key_O):
-            self.on_btn_rotate()
-
-        if (event.key() == Qt.Key_1):
-            if self.checkBox_Led1.isChecked() is True:
-                self.checkBox_Led1.setChecked(False)
-            else:
-                self.checkBox_Led1.setChecked(True)
-        elif (event.key() == Qt.Key_2):
-            if self.checkBox_Led2.isChecked() is True:
-                self.checkBox_Led2.setChecked(False)
-            else:
-                self.checkBox_Led2.setChecked(True)
-        elif (event.key() == Qt.Key_3):
-            if self.checkBox_Led3.isChecked() is True:
-                self.checkBox_Led3.setChecked(False)
-            else:
-                self.checkBox_Led3.setChecked(True)
-        elif (event.key() == Qt.Key_4):
-            if self.checkBox_Led4.isChecked() is True:
-                self.checkBox_Led4.setChecked(False)
-            else:
-                self.checkBox_Led4.setChecked(True)
-        elif (event.key() == Qt.Key_5):
-            if self.checkBox_Led5.isChecked() is True:
-                self.checkBox_Led5.setChecked(False)
-            else:
-                self.checkBox_Led5.setChecked(True)
-        elif (event.key() == Qt.Key_6):
-            if self.checkBox_Led6.isChecked() is True:
-                self.checkBox_Led6.setChecked(False)
-            else:
-                self.checkBox_Led6.setChecked(True)
-        elif (event.key() == Qt.Key_7):
-            if self.checkBox_Led7.isChecked() is True:
-                self.checkBox_Led7.setChecked(False)
-            else:
-                self.checkBox_Led7.setChecked(True)
-        elif (event.key() == Qt.Key_8):
-            if self.checkBox_Led8.isChecked() is True:
-                self.checkBox_Led8.setChecked(False)
-            else:
-                self.checkBox_Led8.setChecked(True)
-
-        if event.isAutoRepeat():
-            return
-
-        if event.key() == Qt.Key_W:
-            self.active_keys.add('W')
-            self.on_btn_ForWard()
-            self.is_stopped = False
-        elif event.key() == Qt.Key_S:
-            self.active_keys.add('S')
-            self.on_btn_BackWard()
-            self.is_stopped = False
-        elif event.key() == Qt.Key_A:
-            self.active_keys.add('A')
-            self.on_btn_Turn_Left()
-            self.is_stopped = False
-        elif event.key() == Qt.Key_D:
-            self.active_keys.add('D')
-            self.on_btn_Turn_Right()
-            self.is_stopped = False
-        elif event.key() == Qt.Key_Space:
-            self.on_btn_Buzzer()
-            self.Key_Space = True
-
-    def keyReleaseEvent(self, event):
-        if event.isAutoRepeat():
-            return
-        # Remove the released key from the active set
-        if event.key() == Qt.Key_W:
-            self.active_keys.discard('W')
-        elif event.key() == Qt.Key_A:
-            self.active_keys.discard('A')
-        elif event.key() == Qt.Key_S:
-            self.active_keys.discard('S')
-        elif event.key() == Qt.Key_D:
-            self.active_keys.discard('D')
-
-        # Only stop if no movement keys are active
-        if not self.active_keys:
-            if not self.is_stopped:
-                self.on_btn_Stop()
-                self.is_stopped = True
-        else:
-            self.is_stopped = False
-
-        if (event.key() == Qt.Key_Space):
-            if not (event.isAutoRepeat()) and self.Key_Space is True:
-                self.on_btn_Buzzer()
-                self.Key_Space = False
-
-    def on_btn_ForWard(self):
-        ForWard = self.intervalChar + str(1250) + self.intervalChar + str(1250) + self.intervalChar + str(
-            1250) + self.intervalChar + str(1250) + self.endChar
-        self.TCP.sendData(cmd.CMD_MOTOR + ForWard)
-        self.current_command = (f"Forward: {ForWard}")
-
-    def on_btn_Turn_Left(self):
-        Turn_Left = self.intervalChar + str(300) + self.intervalChar + str(300) + self.intervalChar + str(
-            3500) + self.intervalChar + str(3500) + self.endChar
-        self.TCP.sendData(cmd.CMD_MOTOR + Turn_Left)
-        self.current_command = f"Turn Left: {Turn_Left}"
-
-    def on_btn_BackWard(self):
-        BackWard = self.intervalChar + str(-1250) + self.intervalChar + str(-1250) + self.intervalChar + str(
-            -1250) + self.intervalChar + str(-1250) + self.endChar
-        self.TCP.sendData(cmd.CMD_MOTOR + BackWard)
-        self.current_command = f"Backward: {BackWard}"
-
-    def on_btn_Turn_Right(self):
-        Turn_Right = self.intervalChar + str(3500) + self.intervalChar + str(3500) + self.intervalChar + str(
-            300) + self.intervalChar + str(300) + self.endChar
-        self.TCP.sendData(cmd.CMD_MOTOR + Turn_Right)
-        self.current_command = f"Turn Right: {Turn_Right}"
-
-    def on_btn_Stop(self):
-        if not self.active_keys:
-            Stop = self.intervalChar + str(0) + self.intervalChar + str(0) + self.intervalChar + str(
-                0) + self.intervalChar + str(0) + self.endChar
-        self.TCP.sendData(cmd.CMD_MOTOR + Stop)
-        self.current_command = f"Stop: {Stop}"
-        self.is_stopped = True
-
-
-
-    def on_btn_wheelchange(self):
-        if self.Wheel_Flag:
-            self.Btn_Move_Left.hide()
-            self.Btn_Move_Right.hide()
-            self.Btn_DiaLeft.hide()
-            self.Btn_DiaRight.hide()
-            self.Btn_DiaDLeft.hide()
-            self.Btn_DiaDRight.hide()
-            self.Btn_Rotate.hide()
-            self.Btn_Turn_Left.move(80, 520)
-            self.Btn_Turn_Right.move(300, 520)
-            self.Btn_wheel.setText("Ordinaly_wheels")
-            self.label_Video.setPixmap(QPixmap('image/Raspberry_4WD_Car.png'))
-            self.Wheel_Flag = 0
-        else:
-            self.Btn_Move_Left.show()
-            self.Btn_Move_Right.show()
-            self.Btn_DiaLeft.show()
-            self.Btn_DiaRight.show()
-            self.Btn_DiaDLeft.show()
-            self.Btn_DiaDRight.show()
-            self.Btn_Rotate.show()
-            self.Btn_Turn_Left.move(0, 520)
-            self.Btn_Turn_Right.move(380, 520)
-            self.Btn_wheel.setText("Mecanum_wheels")
-            self.label_Video.setPixmap(QPixmap('image/Raspberry_4WD_M_Car.png'))
-            self.Wheel_Flag = 1
-
-
-
-    def on_btn_video(self):
-        if self.Btn_Video.text() == 'Open Video':
-            self.timer.start(34)
-            self.Btn_Video.setText('Close Video')
-        elif self.Btn_Video.text() == 'Close Video':
-            self.timer.stop()
-            self.Btn_Video.setText('Open Video')
-
-    def on_btn_Up(self):
-        self.servo2 = self.servo2 + 10
-        if self.servo2 >= 180:
-            self.servo2 = 180
-        self.VSlider_Servo2.setValue(self.servo2)
-
-    def on_btn_Left(self):
-        self.servo1 = self.servo1 - 10
-        if self.servo1 <= 0:
-            self.servo1 = 0
-        self.HSlider_Servo1.setValue(self.servo1)
-
-    def on_btn_Down(self):
-        self.servo2 = self.servo2 - 10
-        if self.servo2 <= 80:
-            self.servo2 = 80
-        self.VSlider_Servo2.setValue(self.servo2)
-
-    def on_btn_Right(self):
-        self.servo1 = self.servo1 + 10
-        if self.servo1 >= 180:
-            self.servo1 = 180
-        self.HSlider_Servo1.setValue(self.servo1)
-
-    def on_btn_Home(self):
-        self.servo1 = 90
-        self.servo2 = 90
-        self.HSlider_Servo1.setValue(self.servo1)
-        self.VSlider_Servo2.setValue(self.servo2)
-
-    def on_btn_Buzzer(self):
-        if self.Btn_Buzzer.text() == 'Buzzer':
-            self.TCP.sendData(cmd.CMD_BUZZER + self.intervalChar + '1' + self.endChar)
-            self.Btn_Buzzer.setText('Noise')
-        else:
-            self.TCP.sendData(cmd.CMD_BUZZER + self.intervalChar + '0' + self.endChar)
-            self.Btn_Buzzer.setText('Buzzer')
-
-    def on_btn_Ultrasonic(self):
-        if self.Ultrasonic.text() == "Ultrasonic":
-            self.TCP.sendData(cmd.CMD_SONIC + self.intervalChar + '1' + self.endChar)
-        else:
-            self.TCP.sendData(cmd.CMD_SONIC + self.intervalChar + '0' + self.endChar)
-            self.Ultrasonic.setText("Ultrasonic")
-
-    def on_btn_Light(self):
-        if self.Light.text() == "Light":
-            self.TCP.sendData(cmd.CMD_LIGHT + self.intervalChar + '1' + self.endChar)
-        else:
-            self.TCP.sendData(cmd.CMD_LIGHT + self.intervalChar + '0' + self.endChar)
-            self.Light.setText("Light")
-
-    def Change_Left_Right(self):  # Left or Right
-        self.servo1 = self.HSlider_Servo1.value()
-        self.TCP.sendData(cmd.CMD_SERVO + self.intervalChar + '0' + self.intervalChar + str(self.servo1) + self.endChar)
-        self.label_Servo1.setText("%d" % self.servo1)
-
-    def Change_Up_Down(self):  # Up or Down
-        self.servo2 = self.VSlider_Servo2.value()
-        self.TCP.sendData(cmd.CMD_SERVO + self.intervalChar + '1' + self.intervalChar + str(self.servo2) + self.endChar)
-        self.label_Servo2.setText("%d" % self.servo2)
-
-    def Fine_Tune_Left_Right(self):  # fine tune Left or Right
-        self.label_FineServo1.setText(str(self.HSlider_FineServo1.value()))
-        data = self.servo1 + self.HSlider_FineServo1.value()
-        self.TCP.sendData(cmd.CMD_SERVO + self.intervalChar + '0' + self.intervalChar + str(data) + self.endChar)
-
-    def Fine_Tune_Up_Down(self):  # fine tune Up or Down
-        self.label_FineServo2.setText(str(self.HSlider_FineServo2.value()))
-        data = self.servo2 + self.HSlider_FineServo2.value()
-        self.TCP.sendData(cmd.CMD_SERVO + self.intervalChar + '1' + self.intervalChar + str(data) + self.endChar)
-
-    def windowMinimumed(self):
-        self.showMinimized()
-
-    def LedChange(self, b):
-        R = self.Color_R.text()
-        G = self.Color_G.text()
-        B = self.Color_B.text()
-        led_Off = self.intervalChar + str(0) + self.intervalChar + str(0) + self.intervalChar + str(0) + self.endChar
-        color = self.intervalChar + str(R) + self.intervalChar + str(G) + self.intervalChar + str(B) + self.endChar
-        if b.text() == "Led1":
-            self.led_Index = str(0x01)
-            if b.isChecked() is True:
-                self.TCP.sendData(cmd.CMD_LED + self.intervalChar + self.led_Index + color)
-            else:
-                self.TCP.sendData(cmd.CMD_LED + self.intervalChar + self.led_Index + led_Off)
-        if b.text() == "Led2":
-            self.led_Index = str(0x02)
-            if b.isChecked() is True:
-                self.TCP.sendData(cmd.CMD_LED + self.intervalChar + self.led_Index + color)
-            else:
-                self.TCP.sendData(cmd.CMD_LED + self.intervalChar + self.led_Index + led_Off)
-        if b.text() == "Led3":
-            self.led_Index = str(0x04)
-            if b.isChecked() is True:
-                self.TCP.sendData(cmd.CMD_LED + self.intervalChar + self.led_Index + color)
-            else:
-                self.TCP.sendData(cmd.CMD_LED + self.intervalChar + self.led_Index + led_Off)
-        if b.text() == "Led4":
-            self.led_Index = str(0x08)
-            if b.isChecked() is True:
-                self.TCP.sendData(cmd.CMD_LED + self.intervalChar + self.led_Index + color)
-            else:
-                self.TCP.sendData(cmd.CMD_LED + self.intervalChar + self.led_Index + led_Off)
-        if b.text() == "Led5":
-            self.led_Index = str(0x10)
-            if b.isChecked() is True:
-                self.TCP.sendData(cmd.CMD_LED + self.intervalChar + self.led_Index + color)
-            else:
-                self.TCP.sendData(cmd.CMD_LED + self.intervalChar + self.led_Index + led_Off)
-        if b.text() == "Led6":
-            self.led_Index = str(0x20)
-            if b.isChecked() is True:
-                self.TCP.sendData(cmd.CMD_LED + self.intervalChar + self.led_Index + color)
-            else:
-                self.TCP.sendData(cmd.CMD_LED + self.intervalChar + self.led_Index + led_Off)
-        if b.text() == "Led7":
-            self.led_Index = str(0x40)
-            if b.isChecked() is True:
-                self.TCP.sendData(cmd.CMD_LED + self.intervalChar + self.led_Index + color)
-            else:
-                self.TCP.sendData(cmd.CMD_LED + self.intervalChar + self.led_Index + led_Off)
-        if b.text() == "Led8":
-            self.led_Index = str(0x80)
-            if b.isChecked() is True:
-                self.TCP.sendData(cmd.CMD_LED + self.intervalChar + self.led_Index + color)
-            else:
-                self.TCP.sendData(cmd.CMD_LED + self.intervalChar + self.led_Index + led_Off)
-        if b.text() == "Led_Mode1":
-            if b.isChecked() is True:
-                self.checkBox_Led_Mode2.setChecked(False)
-                self.checkBox_Led_Mode3.setChecked(False)
-                self.checkBox_Led_Mode4.setChecked(False)
-                self.TCP.sendData(cmd.CMD_LED_MOD + self.intervalChar + '1' + self.endChar)
-            else:
-                self.TCP.sendData(cmd.CMD_LED_MOD + self.intervalChar + '0' + self.endChar)
-        if b.text() == "Led_Mode2":
-            if b.isChecked() is True:
-
-                self.checkBox_Led_Mode1.setChecked(False)
-                self.checkBox_Led_Mode3.setChecked(False)
-                self.checkBox_Led_Mode4.setChecked(False)
-                self.TCP.sendData(cmd.CMD_LED_MOD + self.intervalChar + '2' + self.endChar)
-            else:
-                self.TCP.sendData(cmd.CMD_LED_MOD + self.intervalChar + '0' + self.endChar)
-        if b.text() == "Led_Mode3":
-            if b.isChecked() is True:
-                self.checkBox_Led_Mode2.setChecked(False)
-                self.checkBox_Led_Mode1.setChecked(False)
-                self.checkBox_Led_Mode4.setChecked(False)
-                self.TCP.sendData(cmd.CMD_LED_MOD + self.intervalChar + '3' + self.endChar)
-            else:
-                self.TCP.sendData(cmd.CMD_LED_MOD + self.intervalChar + '0' + self.endChar)
-        if b.text() == "Led_Mode4":
-            if b.isChecked() is True:
-                self.checkBox_Led_Mode2.setChecked(False)
-                self.checkBox_Led_Mode3.setChecked(False)
-                self.checkBox_Led_Mode1.setChecked(False)
-                self.TCP.sendData(cmd.CMD_LED_MOD + self.intervalChar + '4' + self.endChar)
-            else:
-                self.TCP.sendData(cmd.CMD_LED_MOD + self.intervalChar + '0' + self.endChar)
-
-    def on_btn_Mode(self, Mode):
-        if Mode.text() == "M-Free":
-            if Mode.isChecked() is True:
-                # self.timer.start(34)
-                self.TCP.sendData(cmd.CMD_MODE + self.intervalChar + 'one' + self.endChar)
-        if Mode.text() == "M-Light":
-            if Mode.isChecked() is True:
-                # self.timer.stop()
-                self.TCP.sendData(cmd.CMD_MODE + self.intervalChar + 'two' + self.endChar)
-        if Mode.text() == "M-Sonic":
-            if Mode.isChecked() is True:
-                # self.timer.stop()
-                self.TCP.sendData(cmd.CMD_MODE + self.intervalChar + 'three' + self.endChar)
-        if Mode.text() == "M-Line":
-            if Mode.isChecked() is True:
-                # self.timer.stop()
-                self.TCP.sendData(cmd.CMD_MODE + self.intervalChar + 'four' + self.endChar)
-
-    def on_btn_Connect(self):
-        if self.Btn_Connect.text() == "Connect":
-            self.h = self.IP.text()
-            self.TCP.StartTcpClient(self.h, )
-            file = open('IP.txt', 'w')
-            file.write(self.IP.text())
-            file.close()
-            try:
-                self.streaming = Thread(target=self.TCP.streaming, args=(self.h,))
-                self.streaming.start()
-            except:
-                print('video error')
-            try:
-                self.recv = Thread(target=self.recvmassage)
-                self.recv.start()
-            except:
-                print('recv error')
-            self.Btn_Connect.setText("Disconnect")
-            print('Server address:' + str(self.h) + '\n')
-        elif self.Btn_Connect.text() == "Disconnect":
-            self.Btn_Connect.setText("Connect")
-            try:
-                stop_thread(self.recv)
-                stop_thread(self.power)
-                stop_thread(self.streaming)
-            except:
-                pass
-            self.TCP.StopTcpcClient()
-
-    def close(self):
-        self.timer.stop()
-        try:
-            stop_thread(self.recv)
-            stop_thread(self.streaming)
-        except:
-            pass
-        self.TCP.StopTcpcClient()
-        try:
-            os.remove("video.jpg")
-        except:
-            pass
-        QCoreApplication.instance().quit()
-        sys.exit(0)
-
-    def Power(self):
-        while True:
-            try:
-                self.TCP.sendData(cmd.CMD_POWER + self.endChar)
-                time.sleep(60)
-            except:
-                break
-
-    def recvmassage(self):
-        self.TCP.socket1_connect(self.h)
-        self.power = Thread(target=self.Power)
-        self.power.start()
-        restCmd = ""
-
-        while True:
-            Alldata = restCmd + str(self.TCP.recvData())
-            restCmd = ""
-            print(Alldata)
-            if Alldata == "":
-                break
-            else:
-                cmdArray = Alldata.split("\n")
-                if (cmdArray[-1] != ""):
-                    restCmd = cmdArray[-1]
-                    cmdArray = cmdArray[:-1]
-            for oneCmd in cmdArray:
-                Massage = oneCmd.split("#")
-                if cmd.CMD_SONIC in Massage:
-                    # self.Ultrasonic.setText('Obstruction:%s cm' % Massage[1])
-                    u = 'Obstruction:%s cm' % Massage[1]
-                    self.U.send(u)
-                elif cmd.CMD_LIGHT in Massage:
-                    # self.Light.setText("Left:" + Massage[1] + 'V' + ' ' + "Right:" + Massage[2] + 'V')
-                    l = "Left:" + Massage[1] + 'V' + ' ' + "Right:" + Massage[2] + 'V'
-                    self.L.send(l)
-                elif cmd.CMD_POWER in Massage:
-                    percent_power = int((float(Massage[1]) - 7) / 1.40 * 100)
-                    # self.progress_Power.setValue(percent_power)
-                    self.Pb.send(percent_power)
-
-    def is_valid_jpg(self, jpg_file):
-        try:
-            bValid = True
-            if jpg_file.split('.')[-1].lower() == 'jpg':
-                with open(jpg_file, 'rb') as f:
-                    buf = f.read()
-                    if not buf.startswith(b'\xff\xd8'):
-                        bValid = False
-                    elif buf[6:10] in (b'JFIF', b'Exif'):
-                        if not buf.rstrip(b'\0\r\n').endswith(b'\xff\xd9'):
-                            bValid = False
-                    else:
-                        try:
-                            Image.open(f).verify()
-                        except:
-                            bValid = False
-            else:
-                return bValid
-        except:
-            pass
-        return bValid
-
-
-    def Tracking_Face(self):
-        if self.Btn_Tracking_Faces.text() == "Tracing-On":
-            self.Btn_Tracking_Faces.setText("Tracing-Off")
-            self.tracing = True
-            self.capture_timer.start(100)  # Start capturing images every 0.1 seconds
-        else:
-            self.Btn_Tracking_Faces.setText("Tracing-On")
-            self.tracing = False
-            self.capture_timer.stop()  # Stop image capturing
-
-    def capture_image(self):
-        timestamp = time.strftime("%Y%m%d-%H%M%S") + '-' + str(int(time.time() * 1000) % 1000)  # millisecond
-        image_path = f"./training images/frame_{timestamp}.jpg"
-
-        # Read the current frame
-        img = cv2.imread('video.jpg')
-
-        # Check if the image was read correctly
-        if img is None:
-            print("Error: Image data is invalid, could not read 'video.jpg'.")
-            return
-
-        try:
-            if self.is_valid_jpg('video.jpg'):
-                img = cv2.imread('video.jpg')  # Read the current frame from the file
-                cv2.imwrite(image_path, img)  # Save the image with a unique name
-                self.log_movement_with_image(image_path, self.current_command)
-                print(f"Saved image: {image_path}")
-        except Exception as e:
-            print(f"Error capturing image: {e}")
-
-    def time(self):
-        """Update the video display, without face tracking."""
-        self.TCP.video_Flag = False
-        try:
-            if self.is_valid_jpg('video.jpg'):
-                # Update the video display with the current frame
-                self.label_Video.setPixmap(QPixmap('video.jpg'))
-        except Exception as e:
-            print(f"Error updating video: {e}")
-        self.TCP.video_Flag = True
-
-    # def log_pwm_command(self, command):
-    #     """
-    #     Logs the given PWM command to a text file.
-    #
-    #     Args:
-    #         command (str): The command string that is being sent to the motor.
-    #     """
-    #     try:
-    #         with open(self.log_filename, "a") as log_file:  # Open in append mode
-    #             timestamp = time.strftime("%Y-%m-%d %H:%M:%S."+ str(int(time.time() * 1000) % 1000) )
-    #             log_file.write(f"{timestamp} - {command}\n")
-    #             print(f"Logged PWM command: {command}")
-    #     except Exception as e:
-    #         print(f"Error logging PWM command: {e}")
-
-    def log_movement_with_image(self, image_path, command):
-        """
-        Logs the image path along with the movement command.
-        """
-        try:
-            with open(self.log_filename, "a") as log_file:
-                timestamp = time.strftime("%Y-%m-%d %H:%M:%S." + str(int(time.time() * 1000) % 1000) )
-                log_file.write(f"{timestamp}, {image_path}, {command}\n")
-                print(f"Logged image and command: {image_path}, {command}")
-        except Exception as e:
-            print(f"Error logging image and command: {e}")
-
-if __name__ == '__main__':
-    QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
-    app = QApplication(sys.argv)
-    myshow = mywindow()
-    myshow.show()
-    sys.exit(app.exec_())
+
+# Set pandas options
+pd.set_option('display.max_rows', None)
+
+# Directories for videos and logs
+video_dir = "videos/"
+log_dir = "movement_logs/"
+
+# Command mapping
+command_mapping = {
+    "forward": 0,
+    "turn left": 1,
+    "turn right": 2,
+    "turn left slightly": 3,
+    "turn right slightly": 4,
+}
+
+# Sequence length for temporal context
+sequence_length = 5
+frame_size = (64, 64)  # Reduced input size for faster processing
+PIXEL_DIFF_THRESHOLD = 0.05
+
+# Initialize counters for commands
+command_counts = {cmd: 0 for cmd in command_mapping.keys()}
+
+# Preprocessing function (with proper normalization for MobileNetV3)
+def preprocess_frame(frame):
+    try:
+        resized_frame = cv2.resize(frame, frame_size)  # Resize to required dimensions
+        normalized_frame = resized_frame.astype('float32') / 255.0  # Normalize to [0, 1]
+        normalized_frame = (normalized_frame - 0.5) / 0.5  # Normalize to [-1, 1]
+        return normalized_frame
+    except Exception as e:
+        print(f"Error during preprocessing: {e}")
+        return None
+
+# Data augmentation
+augmentation_transforms = transforms.Compose([
+    transforms.RandomHorizontalFlip(p=0.5),
+    transforms.RandomRotation(degrees=10),
+    transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.2),
+])
+
+# Adjust label for horizontal flips
+def adjust_label_for_flip(label, was_flipped):
+    if not was_flipped:
+        return label
+    if label == command_mapping["turn left"]:
+        return command_mapping["turn right"]
+    elif label == command_mapping["turn right"]:
+        return command_mapping["turn left"]
+    elif label == command_mapping["turn left slightly"]:
+        return command_mapping["turn right slightly"]
+    elif label == command_mapping["turn right slightly"]:
+        return command_mapping["turn left slightly"]
+    return label
+
+def augment_frame_and_label(frame, label):
+    frame = torch.tensor(frame).permute(2, 0, 1)  # Convert to tensor and permute to (C, H, W)
+    was_flipped = False
+
+    if torch.rand(1).item() < 0.5:  # 50% probability of flipping
+        frame = transforms.functional.hflip(frame)
+        was_flipped = True
+        label = adjust_label_for_flip(label, was_flipped)
+
+    frame = transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.2)(frame)
+    augmented_frame = frame.permute(1, 2, 0).numpy()
+    return augmented_frame, label
+
+# Dataset preparation
+frames = []
+labels = []
+timestamps = []
+
+for video_file in os.listdir(video_dir):
+    if not video_file.endswith(".mp4"):
+        continue
+    log_file = os.path.join(log_dir, video_file.replace(".mp4", "_log.txt"))
+    video_path = os.path.join(video_dir, video_file)
+    if not os.path.exists(log_file):
+        print(f"Log file missing for video: {video_file}")
+        continue
+
+    commands_data = pd.read_csv(log_file, sep="\t", skiprows=1, names=["timestamp", "command", "error"])
+    commands_data["timestamp"] = pd.to_numeric(commands_data["timestamp"], errors="coerce")
+    commands_data = commands_data.dropna(subset=["timestamp"]).drop(columns=["error"])
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        print(f"Error: Unable to open video file {video_file}")
+        continue
+
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    frame_interval = 1 / fps
+    frame_count = 0
+    video_frames = []
+    video_labels = []
+    last_frame = None
+    discarded_frames = 0
+
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        current_timestamp = frame_count * frame_interval
+        closest_command = commands_data.iloc[
+            (commands_data["timestamp"] - current_timestamp).abs().idxmin()
+        ]
+        command_label = command_mapping.get(closest_command["command"], -1)
+
+        if command_label == -1:
+            frame_count += 1
+            print(f"No valid command for timestamp {current_timestamp:.2f}. Skipping frame.")
+            continue
+
+        frame_preprocessed = preprocess_frame(frame)
+        if frame_preprocessed is None:
+            frame_count += 1
+            print(f"Frame {frame_count} skipped during preprocessing.")
+            continue
+
+        frame_resized = cv2.resize(frame_preprocessed, frame_size)
+
+        if last_frame is not None:
+            pixel_diff = np.mean(np.abs(frame_resized - last_frame))
+            if pixel_diff < PIXEL_DIFF_THRESHOLD:
+                frame_count += 1
+                print(f"Frame {frame_count} discarded due to low pixel difference.")
+                discarded_frames += 1
+                continue
+
+        # Update processed command counts
+        for cmd, idx in command_mapping.items():
+            if command_label == idx:
+                command_counts[cmd] += 1
+
+        if np.random.rand() > 0.5:
+            frame_resized, command_label = augment_frame_and_label(frame_resized, command_label)
+
+        last_frame = frame_resized.copy()
+        video_frames.append(frame_resized.astype('float32'))
+        video_labels.append(command_label)
+        frame_count += 1
+
+    print(f"Discarded {discarded_frames} frames due to low pixel difference.")
+    for i in range(len(video_frames) - sequence_length + 1):
+        frames.append(video_frames[i:i + sequence_length])
+        labels.append(video_labels[i + sequence_length - 2])
+    cap.release()
+
+# Print command counts after processing
+print("Command Counts:")
+for command, count in command_counts.items():
+    print(f"{command}: {count}")
+
+# Dataset definition
+class RC_CarDataset(Dataset):
+    def __init__(self, frames, labels):
+        self.frames = np.array(frames, dtype=np.float32)
+        self.labels = np.array(labels, dtype=np.int64)
+    def __len__(self):
+        return len(self.labels)
+    def __getitem__(self, idx):
+        frame = torch.tensor(self.frames[idx]).permute(0, 3, 1, 2)
+        label = torch.tensor(self.labels[idx])
+        return frame, label
+
+# Load dataset
+dataset = RC_CarDataset(frames, labels)
+
+# Check device in use
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Device in use: {device}")
+
+
+# Compute class weights
+labels_np = np.array(labels)  # Convert labels to NumPy array
+class_weights = compute_class_weight(
+    class_weight='balanced',  # Compute balanced weights
+    classes=np.unique(labels_np),  # Unique class labels
+    y=labels_np  # The labels
+)
+class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32).to(device)
+
+print(f"Class Weights: {class_weights}")
+
+
+train_size = int(0.8 * len(dataset))
+indices = torch.randperm(len(dataset)).tolist()
+train_indices = indices[:train_size]
+test_indices = indices[train_size:]
+
+train_dataset = Subset(dataset, train_indices)
+test_dataset = Subset(dataset, test_indices)
+
+train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True, num_workers=0, pin_memory=True)
+test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False, num_workers=0, pin_memory=True)
+
+# Remaining code...
+
+
+
+# Model definition
+class OptimizedRC_CarModel(nn.Module):
+    def __init__(self, sequence_length):
+        super().__init__()
+        # Load SqueezeNet and extract features
+        squeezenet = squeezenet1_1(weights="IMAGENET1K_V1")
+        self.squeezenet = nn.Sequential(*list(squeezenet.features.children()))
+
+        # Adaptive pooling to match LSTM input size
+        self.pool = nn.AdaptiveAvgPool2d((1, 1))
+
+        # LSTM layers
+        self.lstm = nn.LSTM(512, 128, batch_first=True, num_layers=1, dropout=0.3)
+
+        # Fully connected layers
+        self.fc1 = nn.Linear(128, 128)
+        self.fc2 = nn.Linear(128, len(command_mapping))
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        batch_size, seq_len, channels, height, width = x.size()
+
+        # Flatten sequence and pass through SqueezeNet feature extractor
+        x = x.view(-1, channels, height, width)
+        x = self.squeezenet(x)
+
+        # Adaptive pooling and reshaping for LSTM
+        x = self.pool(x).view(batch_size, seq_len, -1)
+
+        # Pass through LSTM
+        x, _ = self.lstm(x)
+
+        # Fully connected layers
+        x = self.relu(self.fc1(x[:, -1, :]))
+        return self.fc2(x)
+
+
+# Instantiate Model
+model = OptimizedRC_CarModel(sequence_length).to(device)
+
+# Training Configuration
+criterion = nn.CrossEntropyLoss(weight=class_weights_tensor)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=1e-4)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=2, min_lr=1e-6)
+
+# Mixed Precision Training
+scaler = torch.cuda.amp.GradScaler()
+
+
+def check_validation_results(model, test_loader, device, command_mapping):
+    """
+    Evaluate the model on the test set and print detailed validation results.
+    """
+    model.eval()
+    predictions = []
+    ground_truth = []
+
+    # Perform evaluation
+    with torch.no_grad():
+        for inputs, targets in test_loader:
+            # Ensure inputs and targets are moved to the correct device
+            inputs, targets = inputs.to(device), targets.to(device)
+            outputs = model(inputs)
+            preds = torch.argmax(outputs, dim=1)
+
+            # Collect predictions and ground truth
+            predictions.extend(preds.cpu().numpy())  # Move predictions to CPU for processing
+            ground_truth.extend(targets.cpu().numpy())  # Move ground truth to CPU
+
+    # Count the occurrences of predictions and ground truth
+    prediction_counts = Counter(predictions)
+    ground_truth_counts = Counter(ground_truth)
+
+    print("\n--- Validation Results ---")
+    print("Prediction Distribution:")
+    for cmd, idx in command_mapping.items():
+        print(f"{cmd}: {prediction_counts[idx]}")
+
+    print("\nGround Truth Distribution:")
+    for cmd, idx in command_mapping.items():
+        print(f"{cmd}: {ground_truth_counts[idx]}")
+
+    # Generate a classification report
+    command_names = list(command_mapping.keys())
+    print("\n--- Classification Report ---")
+    print(classification_report(ground_truth, predictions, target_names=command_names))
+
+    # Generate a confusion matrix
+    cm = confusion_matrix(ground_truth, predictions)
+    print("\n--- Confusion Matrix ---")
+    print(cm)
+
+    # Visualize the confusion matrix using seaborn heatmap
+    try:
+        plt.figure(figsize=(8, 6))
+        sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=command_names, yticklabels=command_names)
+        plt.title("Confusion Matrix")
+        plt.xlabel("Predicted")
+        plt.ylabel("True")
+        plt.show()
+    except ImportError:
+        print("Seaborn not installed. Skipping confusion matrix visualization.")
+
+
+# Define early stopping parameters
+early_stopping_patience = 5
+best_val_loss = float("inf")
+early_stopping_counter = 0
+best_model_state = None
+checkpoint_path = "squeeze_check.pth"
+final_checkpoint_path = "squeeze_final.pth"
+
+# Training Loop
+for epoch in range(20):  # Number of epochs
+    start_time = time.time()
+    model.train()
+    running_loss = 0.0  # Initialize running loss for this epoch
+    correct_train = 0   # Initialize correct predictions for training
+    total_train = 0     # Initialize total predictions for training
+
+    # Training Phase
+    for inputs, targets in train_loader:
+        inputs, targets = inputs.to(device), targets.to(device)
+        optimizer.zero_grad()
+        with torch.cuda.amp.autocast():  # Mixed precision training
+            outputs = model(inputs)
+            loss = criterion(outputs, targets)
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
+        running_loss += loss.item()
+
+        # Calculate training accuracy
+        preds = torch.argmax(outputs, dim=1)
+        correct_train += (preds == targets).sum().item()
+        total_train += targets.size(0)
+
+    train_loss = running_loss / len(train_loader)  # Average loss for this epoch
+    train_acc = correct_train / total_train  # Training accuracy
+
+    # Validation Phase
+    val_loss = 0.0  # Initialize validation loss
+    correct_val = 0  # Initialize correct predictions for validation
+    total_val = 0    # Initialize total predictions for validation
+    model.eval()
+    with torch.no_grad():
+        for inputs, targets in test_loader:
+            inputs, targets = inputs.to(device), targets.to(device)
+            outputs = model(inputs)
+            val_loss += criterion(outputs, targets).item()
+
+            # Calculate validation accuracy
+            preds = torch.argmax(outputs, dim=1)
+            correct_val += (preds == targets).sum().item()
+            total_val += targets.size(0)
+
+    val_loss /= len(test_loader)  # Average validation loss
+    val_acc = correct_val / total_val  # Validation accuracy
+
+    # Scheduler Step
+    scheduler.step(val_loss)
+    current_lr = optimizer.param_groups[0]['lr']  # Log current learning rate
+
+    # Save Best Model
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        best_model_state = model.state_dict()
+        torch.save(best_model_state, checkpoint_path)
+        print(f"Epoch {epoch + 1}: val_loss improved to {val_loss:.4f}, saving model to {checkpoint_path}")
+        early_stopping_counter = 0
+    else:
+        print(f"Epoch {epoch + 1}: val_loss did not improve from {best_val_loss:.4f}")
+        early_stopping_counter += 1
+
+    # Epoch Summary
+    epoch_time = time.time() - start_time
+    print(f"Epoch {epoch + 1}/{20}, Train Acc: {train_acc:.4f}, Train Loss: {train_loss:.4f}, "
+          f"Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}, Time: {epoch_time:.2f}s, Current LR: {current_lr:.6f}")
+
+    # Early Stopping
+    if early_stopping_counter >= early_stopping_patience:
+        print("Early stopping triggered. Restoring the best model.")
+        model.load_state_dict(best_model_state)
+        break
+
+# Save Final Model
+torch.save(model.state_dict(), final_checkpoint_path)
+print(f"Training complete. Final model saved as {final_checkpoint_path}")
+
+# Check Validation Results
+check_validation_results(model, test_loader, device, command_mapping)
