@@ -1,0 +1,405 @@
+Timer	Command	Error
+2.67	forward	None
+2.77	forward	None
+2.87	forward	None
+2.98	forward	None
+3.08	forward	None
+3.18	forward	None
+3.28	forward	None
+3.49	turn right slightly	None
+3.59	turn right slightly	None
+3.69	turn right slightly	None
+3.80	turn right slightly	None
+3.90	turn right slightly	None
+4.00	turn right slightly	None
+4.10	turn right slightly	None
+4.31	forward	None
+4.41	forward	None
+4.51	forward	None
+4.62	forward	None
+4.72	forward	None
+4.82	forward	None
+4.93	forward	None
+5.03	forward	None
+5.14	forward	None
+5.24	forward	None
+5.34	forward	None
+5.45	forward	None
+5.55	forward	None
+5.66	forward	None
+5.76	forward	None
+5.87	forward	None
+5.97	forward	None
+6.18	turn left	None
+6.28	turn left	None
+6.39	turn left	None
+6.49	turn left	None
+6.59	turn left	None
+6.70	turn left	None
+6.80	turn left	None
+6.91	turn left	None
+7.01	turn left	None
+7.12	turn left	None
+7.32	forward	None
+7.43	forward	None
+7.53	forward	None
+7.64	forward	None
+7.74	forward	None
+7.84	forward	None
+7.95	forward	None
+8.05	forward	None
+8.16	forward	None
+8.26	forward	None
+8.37	forward	None
+8.47	forward	None
+8.57	forward	None
+8.78	turn right slightly	None
+8.88	turn right slightly	None
+8.99	turn right slightly	None
+9.09	turn right slightly	None
+9.20	turn right slightly	None
+9.30	turn right slightly	None
+9.41	turn right slightly	None
+9.51	turn right slightly	None
+9.61	turn right slightly	None
+9.82	forward	None
+9.93	forward	None
+10.03	forward	None
+10.24	turn right	None
+10.34	turn right	None
+10.44	turn right	None
+10.55	turn right	None
+10.65	turn right	None
+10.76	turn right	None
+10.86	turn right	None
+10.97	turn right	None
+11.07	turn right	None
+11.18	turn right	None
+11.28	turn right	None
+11.38	turn right	None
+11.49	turn right	None
+11.59	turn right	None
+11.70	turn right	None
+11.90	forward	None
+12.01	forward	None
+12.11	forward	None
+12.22	forward	None
+12.32	forward	None
+12.42	forward	None
+12.53	forward	None
+12.73	turn right slightly	None
+12.84	turn right slightly	None
+12.94	turn right slightly	None
+13.05	turn right slightly	None
+13.15	turn right slightly	None
+13.36	forward	None
+13.46	forward	None
+13.57	forward	None
+13.67	forward	None
+13.77	forward	None
+13.98	turn left slightly	None
+14.09	turn left slightly	None
+14.19	turn left slightly	None
+14.29	turn left slightly	None
+14.40	turn left slightly	None
+14.50	turn left slightly	None
+14.71	forward	None
+14.81	forward	None
+14.92	forward	None
+15.02	forward	None
+15.13	forward	None
+15.33	turn right	None
+15.44	turn right	None
+15.54	turn right	None
+15.65	turn right	None
+15.75	turn right	None
+15.85	turn right	None
+18.22	turn right	None
+18.33	turn right	None
+18.43	turn right	None
+18.54	turn right	None
+18.64	turn right	None
+19.06	forward	None
+19.17	forward	None
+19.27	forward	None
+19.48	turn right	None
+19.58	turn right	None
+19.69	turn right	None
+19.79	turn right	None
+19.90	turn right	None
+20.00	turn right	None
+20.11	turn right	None
+20.21	turn right	None
+20.31	turn right	None
+20.42	turn right	None
+20.52	turn right	None
+20.73	forward	None
+20.83	forward	None
+20.94	forward	None
+21.14	turn left	None
+21.25	turn left	None
+21.35	turn left	None
+21.56	forward	None
+21.66	forward	None
+21.77	forward	None
+21.97	turn left	None
+22.08	turn left	None
+22.18	turn left	None
+22.29	turn left	None
+22.39	turn left	None
+22.49	turn left	None
+22.60	turn left	None
+22.70	turn left	None
+22.81	turn left	None
+22.91	turn left	None
+23.02	turn left	None
+23.12	turn left	None
+23.23	turn left	None
+23.43	forward	None
+23.54	forward	None
+23.64	forward	None
+23.75	forward	None
+23.85	forward	None
+24.06	turn right	None
+24.16	turn right	None
+24.27	turn right	None
+24.37	turn right	None
+24.58	forward	None
+24.68	forward	None
+24.78	forward	None
+24.89	forward	None
+24.99	forward	None
+25.10	forward	None
+25.30	turn right	None
+25.41	turn right	None
+25.51	turn right	None
+25.62	turn right	None
+25.72	turn right	None
+25.83	turn right	None
+26.03	forward	None
+26.14	forward	None
+26.34	turn right	None
+26.45	turn right	None
+26.55	turn right	None
+26.66	turn right	None
+26.76	turn right	None
+26.86	turn right	None
+26.97	turn right	None
+27.07	turn right	None
+27.18	turn right	None
+27.28	turn right	None
+27.39	turn right	None
+27.49	turn right	None
+27.60	turn right	None
+27.70	turn right	None
+27.80	turn right	None
+27.91	turn right	None
+28.01	turn right	None
+28.54	forward	None
+28.65	forward	None
+28.85	turn left	None
+29.27	forward	None
+29.38	forward	None
+29.48	forward	None
+29.59	forward	None
+29.79	turn left	None
+29.90	turn left	None
+30.00	turn left	None
+30.10	turn left	None
+30.21	turn left	None
+30.31	turn left	None
+30.42	turn left	None
+30.52	turn left	None
+30.63	turn left	None
+30.73	turn left	None
+30.94	forward	None
+31.04	forward	None
+31.14	forward	None
+31.35	turn right	None
+31.45	turn right	None
+31.56	turn right	None
+31.66	turn right	None
+31.77	turn right	None
+31.87	turn right	None
+31.98	turn right	None
+32.29	forward	None
+32.39	forward	None
+32.50	forward	None
+32.70	turn right	None
+32.81	turn right	None
+32.91	turn right	None
+33.02	turn right	None
+33.12	turn right	None
+33.22	turn right	None
+33.33	turn right	None
+33.43	turn right	None
+33.54	turn right	None
+33.64	turn right	None
+33.75	turn right	None
+33.95	forward	None
+34.06	forward	None
+34.16	forward	None
+34.37	turn right	None
+34.69	turn right slightly	None
+34.79	turn right slightly	None
+34.89	turn right slightly	None
+35.00	turn right slightly	None
+35.10	turn right slightly	None
+35.42	turn right slightly	None
+35.74	forward	None
+35.84	forward	None
+35.94	forward	None
+36.05	forward	None
+36.15	forward	None
+36.26	forward	None
+36.36	forward	None
+36.46	forward	None
+36.57	forward	None
+36.67	forward	None
+36.78	forward	None
+36.88	forward	None
+36.98	forward	None
+37.09	forward	None
+37.19	forward	None
+37.40	turn left	None
+37.50	turn left	None
+37.61	turn left	None
+37.71	turn left	None
+37.82	turn left	None
+38.02	forward	None
+38.23	turn left	None
+38.33	turn left	None
+38.44	turn left	None
+38.54	turn left	None
+38.75	forward	None
+38.85	forward	None
+38.95	forward	None
+39.06	forward	None
+39.16	forward	None
+39.27	forward	None
+39.47	turn right	None
+39.68	forward	None
+39.78	forward	None
+39.89	forward	None
+39.99	forward	None
+40.10	forward	None
+40.30	turn right slightly	None
+40.41	turn right slightly	None
+40.51	turn right slightly	None
+40.62	turn right slightly	None
+40.72	turn right slightly	None
+40.93	forward	None
+41.03	forward	None
+41.14	forward	None
+41.24	forward	None
+41.45	turn right	None
+41.55	turn right	None
+41.65	turn right	None
+41.76	turn right	None
+41.86	turn right	None
+41.97	turn right	None
+42.07	turn right	None
+42.18	turn right	None
+42.28	turn right	None
+42.38	turn right	None
+42.49	turn right	None
+42.59	turn right	None
+42.70	turn right	None
+42.80	turn right	None
+42.91	turn right	None
+43.11	forward	None
+43.22	forward	None
+43.32	forward	None
+43.42	forward	None
+43.53	forward	None
+43.63	forward	None
+43.74	forward	None
+43.94	turn right slightly	None
+44.05	turn right slightly	None
+44.15	turn right slightly	None
+44.26	turn right slightly	None
+44.36	turn right slightly	None
+44.46	turn right slightly	None
+44.57	turn right slightly	None
+44.78	forward	None
+44.88	forward	None
+44.98	forward	None
+45.09	forward	None
+45.29	turn left slightly	None
+45.40	turn left slightly	None
+45.50	turn left slightly	None
+45.61	turn left slightly	None
+45.71	turn left slightly	None
+45.82	turn left slightly	None
+46.02	forward	None
+46.13	forward	None
+46.23	forward	None
+46.34	forward	None
+46.54	turn right	None
+46.65	turn right	None
+46.75	turn right	None
+46.86	turn right	None
+46.96	turn right	None
+47.07	turn right	None
+47.27	forward	None
+47.38	forward	None
+47.48	forward	None
+47.69	turn right	None
+47.79	turn right	None
+47.89	turn right	None
+48.00	turn right	None
+48.10	turn right	None
+48.21	turn right	None
+48.31	turn right	None
+48.42	turn right	None
+48.52	turn right	None
+48.62	turn right	None
+48.73	turn right	None
+48.83	turn right	None
+48.94	turn right	None
+49.04	turn right	None
+49.25	forward	None
+49.35	forward	None
+49.45	forward	None
+49.56	forward	None
+49.66	forward	None
+49.77	forward	None
+49.87	forward	None
+49.98	forward	None
+50.08	forward	None
+50.29	turn left	None
+50.39	turn left	None
+50.50	turn left	None
+50.60	turn left	None
+50.70	turn left	None
+50.81	turn left	None
+50.91	turn left	None
+51.02	turn left	None
+51.12	turn left	None
+51.23	turn left	None
+51.33	turn left	None
+51.43	turn left	None
+51.54	turn left	None
+51.64	turn left	None
+51.75	turn left	None
+51.85	turn left	None
+52.06	forward	None
+52.16	forward	None
+52.37	turn right	None
+52.47	turn right	None
+52.58	turn right	None
+52.78	forward	None
+52.89	forward	None
+52.99	forward	None
+53.10	forward	None
+53.20	forward	None
+53.31	forward	None
+53.41	forward	None
+53.51	forward	None
+53.62	forward	None
+53.72	forward	None
+53.93	turn right	None
+54.03	turn right	None
+54.14	turn right	None
+54.24	turn right	None
+
