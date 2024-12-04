@@ -2,7 +2,6 @@ import os
 import torch
 import torch.nn as nn
 import torch.quantization  # Import for quantization
-from torchvision.models import mobilenet_v3_small
 from torchvision.models import squeezenet1_1
 import cv2
 import numpy as np
